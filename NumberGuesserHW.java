@@ -77,6 +77,7 @@ public class NumberGuesserPart4 {
 				}
 			}
 		}
+		saveLevel();
 	}
 
 	private int getGuess(String message) {
@@ -92,7 +93,9 @@ public class NumberGuesserPart4 {
 
 	private void saveLevel() {
 		try (FileWriter fw = new FileWriter(saveFile)) {
-			fw.write("" + level);// here we need to convert it to a String to record correctly
+			fw.write("" + level + " ");// here we need to convert it to a String to record correctly
+			fw.write("" + strikes + " ");
+			fw.write("" + number);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -109,6 +112,15 @@ public class NumberGuesserPart4 {
 				int _level = reader.nextInt();
 				if (_level > 1) {
 					level = _level;
+					// System.out.println("Level:" + level);
+					// based off level load added strikes as next int in file
+					int _strikes = reader.nextInt();
+					strikes = _strikes;
+					// System.out.println("strikes:" + strikes);
+					// based off level load added strikes as next int in file after strikes
+					int _number = reader.nextInt();
+					number = _number;
+					// System.out.println("number:" + number);
 					break;
 				}
 			}
@@ -129,8 +141,11 @@ public class NumberGuesserPart4 {
 					+ " attempts to guess.");
 			if (loadLevel()) {
 				System.out.println("Successfully loaded level " + level + " let's continue then");
+				System.out.println("You have " + (5 - strikes) + " strikes left");
+				System.out.println("I have also loaded the last number before you quit");
+			} else {
+				number = getNumber(level);
 			}
-			number = getNumber(level);
 			isRunning = true;
 			while (input.hasNext()) {
 				String message = input.nextLine();
