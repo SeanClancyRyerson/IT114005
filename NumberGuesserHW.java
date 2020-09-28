@@ -70,11 +70,24 @@ public class NumberGuesserPart4 {
 			} else {
 				int remainder = maxStrikes - strikes;
 				System.out.println("You have " + remainder + "/" + maxStrikes + " attempts remaining");
-				if (guess > number) {
+				if (guess - 10 > number) {
+					System.out.println("Way Way Lower");
+				} else if (guess - 5 > number) {
+					System.out.println("Way Lower");
+				} else if (guess > number) {
 					System.out.println("Lower");
+				} // split of higher and lowers
+				else if (guess + 10 < number) {
+					System.out.println("Way Way Higher");
+				} else if (guess + 5 < number) {
+					System.out.println("Way Higher");
 				} else if (guess < number) {
 					System.out.println("Higher");
 				}
+				/*
+				 * if (guess > number) { System.out.println("Lower"); } else if (guess < number)
+				 * { System.out.println("Higher"); }
+				 */
 			}
 		}
 		saveLevel();
