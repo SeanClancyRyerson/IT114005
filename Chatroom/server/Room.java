@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.lang.Math;
 
 public class Room implements AutoCloseable {
     private static SocketServer server;// used to refer to accessible server functions
@@ -15,6 +16,8 @@ public class Room implements AutoCloseable {
     private final static String COMMAND_TRIGGER = "/";
     private final static String CREATE_ROOM = "createroom";
     private final static String JOIN_ROOM = "joinroom";
+    private final static String ROLL_DICE = "roll";
+    private final static String FLIP_COIN = "flip";
 
     public Room(String name) {
 	this.name = name;
@@ -100,29 +103,51 @@ public class Room implements AutoCloseable {
 	boolean wasCommand = false;
 	try {
 	    if (message.indexOf(COMMAND_TRIGGER) > -1) {
-		String[] comm = message.split(COMMAND_TRIGGER);
-		log.log(Level.INFO, message);
-		String part1 = comm[1];
-		String[] comm2 = part1.split(" ");
-		String command = comm2[0];
-		if (command != null) {
-		    command = command.toLowerCase();
-		}
-		String roomName;
-		switch (command) {
-		case CREATE_ROOM:
-		    roomName = comm2[1];
-		    if (server.createNewRoom(roomName)) {
-			joinRoom(roomName, client);
-		    }
-		    wasCommand = true;
-		    break;
-		case JOIN_ROOM:
-		    roomName = comm2[1];
-		    joinRoom(roomName, client);
-		    wasCommand = true;
-		    break;
-		}
+				String[] comm = message.split(COMMAND_TRIGGER);
+				log.log(Level.INFO, message);
+				String part1 = comm[1];
+				String[] comm2 = part1.split(" ");
+				String command = comm2[0];
+			if (command != null) {
+			    command = command.toLowerCase();
+			}
+			String roomName;
+			switch (command) {
+			case CREATE_ROOM:
+			    roomName = comm2[1];
+			    if (server.createNewRoom(roomName)) {
+			    	joinRoom(roomName, client);
+			    }
+			    wasCommand = true;
+			    break;
+			case JOIN_ROOM:
+			    roomName = comm2[1];
+			    joinRoom(roomName, client);
+			    wasCommand = true;
+			    break;
+			case ROLL_DICE:
+				int roll = (int)(Math.random() * 6) + 1;
+				log.log(Level.INFO, client.getClientName() + "rolled a " + roll);
+				String rollMes = "has rolled a " + roll;
+				client.send(client.getClientName(), "/roll");
+				client.send(client.getClientName(), rollMes);
+				wasCommand = true;
+				break;
+			case FLIP_COIN:
+				int flip = (int)(Math.random() * 2) + 1;
+				if (flip  == 0) {
+					log.log(Level.INFO, client.getClientName() + " landed on heads");
+					client.send(client.getClientName(), "/flip");
+					client.send(client.getClientName(), "has landed on heads");
+				}
+				else {
+					log.log(Level.INFO, client.getClientName() + " landed on tails");
+					client.send(client.getClientName(), "/flip");
+					client.send(client.getClientName(), "has landed on tails");
+				}
+				wasCommand = true;
+				break;
+			}
 	    }
 	}
 	catch (Exception e) {
@@ -138,9 +163,9 @@ public class Room implements AutoCloseable {
 	    ServerThread c = iter.next();
 	    boolean messageSent = c.sendConnectionStatus(client.getClientName(), isConnect, message);
 	    if (!messageSent) {
-		iter.remove();
-		log.log(Level.INFO, "Removed client " + c.getId());
-	    }
+			iter.remove();
+			log.log(Level.INFO, "Removed client " + c.getId());
+		}
 	}
     }
 
@@ -154,20 +179,21 @@ public class Room implements AutoCloseable {
      */
     protected void sendMessage(ServerThread sender, String message) {
 	log.log(Level.INFO, getName() + ": Sending message to " + clients.size() + " clients");
-	if (processCommands(message, sender)) {
-	    // it was a command, don't broadcast
-	    return;
-	}
-	Iterator<ServerThread> iter = clients.iterator();
-	while (iter.hasNext()) {
-	    ServerThread client = iter.next();
-	    boolean messageSent = client.send(sender.getClientName(), message);
-	    if (!messageSent) {
-		iter.remove();
-		log.log(Level.INFO, "Removed client " + client.getId());
-	    }
-	}
+		if (processCommands(message, sender)) {
+		    // it was a command, don't broadcast
+		    return;
+		}
+		Iterator<ServerThread> iter = clients.iterator();
+		while (iter.hasNext()) {
+		    ServerThread client = iter.next();
+		    boolean messageSent = client.send(sender.getClientName(), message);
+		    if (!messageSent) {
+				iter.remove();
+				log.log(Level.INFO, "Removed client " + client.getId());
+		    }
+		}
     }
+    
 
     /***
      * Will attempt to migrate any remaining clients to the Lobby room. Will then
