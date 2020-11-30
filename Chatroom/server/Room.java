@@ -18,6 +18,15 @@ public class Room implements AutoCloseable {
     private final static String JOIN_ROOM = "joinroom";
     private final static String ROLL_DICE = "roll";
     private final static String FLIP_COIN = "flip";
+    
+    private final static String START_ITALIC = " **";
+    private final static String END_ITALIC = "** ";
+    private final static String START_BOLD = " $$";
+    private final static String END_BOLD = "$$ ";
+    private final static String START_UNDERLINE = " __";
+    private final static String END_UNDERLINE = "__ ";
+    private final static String START_STRIKE = " ~~";
+    private final static String END_STRIKE = "~~ ";
 
     public Room(String name) {
 	this.name = name;
@@ -150,10 +159,53 @@ public class Room implements AutoCloseable {
 			}
 	    }
 	}
-	catch (Exception e) {
-	    e.printStackTrace();
-	}
-	return wasCommand;
+		catch (Exception e) {
+		    e.printStackTrace();
+		}
+		return wasCommand;
+    }
+    
+    // TODO add function similar to processCommands to check for special characters around words that can symbolize bold, italic, underline, etc...
+    private boolean checkFormat(String message, ServerThread client) {
+    	boolean wasFormat = false;
+    	try {
+    		if (message.indexOf(START_ITALIC) > -1 && message.indexOf(END_ITALIC) > -1) {
+    			String partOne = message.substring(0, message.indexOf(START_ITALIC) + 1);
+    			String partTwo = message.substring(message.indexOf(START_ITALIC) + 3, message.indexOf(END_ITALIC));
+    			String partThree = message.substring(message.indexOf(END_ITALIC) + 2, message.length());
+    			String formattedMes = partOne + "(ITALIC)" + partTwo + "(ITALIC)" + partThree;
+    			client.send(client.getClientName(), formattedMes);
+    			wasFormat = true;
+    		}
+    		if (message.indexOf(START_BOLD) > -1 && message.indexOf(END_BOLD) > -1) {
+    			String partOne = message.substring(0, message.indexOf(START_BOLD) + 1);
+    			String partTwo = message.substring(message.indexOf(START_BOLD) + 3, message.indexOf(END_BOLD));
+    			String partThree = message.substring(message.indexOf(END_BOLD) + 2, message.length());
+    			String formattedMes = partOne + "(BOLD)" + partTwo + "(BOLD)" + partThree;
+    			client.send(client.getClientName(), formattedMes);
+    			wasFormat = true;
+    		}
+    		if (message.indexOf(START_UNDERLINE) > -1 && message.indexOf(END_UNDERLINE) > -1) {
+    			String partOne = message.substring(0, message.indexOf(START_UNDERLINE) + 1);
+    			String partTwo = message.substring(message.indexOf(START_UNDERLINE) + 3, message.indexOf(END_UNDERLINE));
+    			String partThree = message.substring(message.indexOf(END_UNDERLINE) + 2, message.length());
+    			String formattedMes = partOne + "(UNDERLINE)" + partTwo + "(UNDERLINE)" + partThree;
+    			client.send(client.getClientName(), formattedMes);
+    			wasFormat = true;
+    		}
+    		if (message.indexOf(START_STRIKE) > -1 && message.indexOf(END_STRIKE) > -1) {
+    			String partOne = message.substring(0, message.indexOf(START_STRIKE) + 1);
+    			String partTwo = message.substring(message.indexOf(START_STRIKE) + 3, message.indexOf(END_STRIKE));
+    			String partThree = message.substring(message.indexOf(END_STRIKE) + 2, message.length());
+    			String formattedMes = partOne + "(STRIKE)" + partTwo + "(STRIKE)" + partThree;
+    			client.send(client.getClientName(), formattedMes);
+    			wasFormat = true;
+    		}
+    	}
+    	catch (Exception e) {
+		    e.printStackTrace();
+		}
+    	return wasFormat;
     }
 
     // TODO changed from string to ServerThread
@@ -181,6 +233,10 @@ public class Room implements AutoCloseable {
 	log.log(Level.INFO, getName() + ": Sending message to " + clients.size() + " clients");
 		if (processCommands(message, sender)) {
 		    // it was a command, don't broadcast
+		    return;
+		}
+		if (checkFormat(message, sender)) {
+		    // it was a special format, broadcast happened in the checkFormat method
 		    return;
 		}
 		Iterator<ServerThread> iter = clients.iterator();
