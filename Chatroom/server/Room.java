@@ -19,14 +19,10 @@ public class Room implements AutoCloseable {
     private final static String ROLL_DICE = "roll";
     private final static String FLIP_COIN = "flip";
     
-    private final static String START_ITALIC = " **";
-    private final static String END_ITALIC = "** ";
-    private final static String START_BOLD = " $$";
-    private final static String END_BOLD = "$$ ";
-    private final static String START_UNDERLINE = " __";
-    private final static String END_UNDERLINE = "__ ";
-    private final static String START_STRIKE = " ~~";
-    private final static String END_STRIKE = "~~ ";
+    private final static String ITALIC = "%%";
+    private final static String BOLD = "@@";
+    private final static String UNDERLINE = "__";
+    private final static String STRIKE = "~~";
 
     public Room(String name) {
 	this.name = name;
@@ -139,20 +135,22 @@ public class Room implements AutoCloseable {
 				log.log(Level.INFO, client.getClientName() + "rolled a " + roll);
 				String rollMes = "has rolled a " + roll;
 				client.send(client.getClientName(), "/roll");
-				client.send(client.getClientName(), rollMes);
+				client.send("<b>" + client.getClientName() + "</b>", "<b style=\"color:blue;\">" + rollMes + "</b>");
 				wasCommand = true;
 				break;
 			case FLIP_COIN:
-				int flip = (int)(Math.random() * 2) + 1;
+				int flip = (int)(Math.random() * 2);
 				if (flip  == 0) {
 					log.log(Level.INFO, client.getClientName() + " landed on heads");
 					client.send(client.getClientName(), "/flip");
-					client.send(client.getClientName(), "has landed on heads");
+					String headMes = "<b style=\"color:green;\">" + "has landed on heads" + "</b>";
+					client.send("<b>" + client.getClientName() + "</b>", headMes);
 				}
 				else {
 					log.log(Level.INFO, client.getClientName() + " landed on tails");
 					client.send(client.getClientName(), "/flip");
-					client.send(client.getClientName(), "has landed on tails");
+					String tailMes = "<b style=\"color:red;\">" + "has landed on tails" + "</b>";
+					client.send("<b>" + client.getClientName() + "</b>", tailMes);
 				}
 				wasCommand = true;
 				break;
@@ -169,37 +167,62 @@ public class Room implements AutoCloseable {
     private boolean checkFormat(String message, ServerThread client) {
     	boolean wasFormat = false;
     	try {
-    		if (message.indexOf(START_ITALIC) > -1 && message.indexOf(END_ITALIC) > -1) {
-    			String partOne = message.substring(0, message.indexOf(START_ITALIC) + 1);
-    			String partTwo = message.substring(message.indexOf(START_ITALIC) + 3, message.indexOf(END_ITALIC));
-    			String partThree = message.substring(message.indexOf(END_ITALIC) + 2, message.length());
-    			String formattedMes = partOne + "(ITALIC)" + partTwo + "(ITALIC)" + partThree;
-    			client.send(client.getClientName(), formattedMes);
+    		String newMes = message;
+    		if(newMes.indexOf(ITALIC) > -1 || newMes.indexOf(BOLD) > -1 || newMes.indexOf(UNDERLINE) > -1 || newMes.indexOf(STRIKE) > -1) {
     			wasFormat = true;
-    		}
-    		if (message.indexOf(START_BOLD) > -1 && message.indexOf(END_BOLD) > -1) {
-    			String partOne = message.substring(0, message.indexOf(START_BOLD) + 1);
-    			String partTwo = message.substring(message.indexOf(START_BOLD) + 3, message.indexOf(END_BOLD));
-    			String partThree = message.substring(message.indexOf(END_BOLD) + 2, message.length());
-    			String formattedMes = partOne + "(BOLD)" + partTwo + "(BOLD)" + partThree;
-    			client.send(client.getClientName(), formattedMes);
-    			wasFormat = true;
-    		}
-    		if (message.indexOf(START_UNDERLINE) > -1 && message.indexOf(END_UNDERLINE) > -1) {
-    			String partOne = message.substring(0, message.indexOf(START_UNDERLINE) + 1);
-    			String partTwo = message.substring(message.indexOf(START_UNDERLINE) + 3, message.indexOf(END_UNDERLINE));
-    			String partThree = message.substring(message.indexOf(END_UNDERLINE) + 2, message.length());
-    			String formattedMes = partOne + "(UNDERLINE)" + partTwo + "(UNDERLINE)" + partThree;
-    			client.send(client.getClientName(), formattedMes);
-    			wasFormat = true;
-    		}
-    		if (message.indexOf(START_STRIKE) > -1 && message.indexOf(END_STRIKE) > -1) {
-    			String partOne = message.substring(0, message.indexOf(START_STRIKE) + 1);
-    			String partTwo = message.substring(message.indexOf(START_STRIKE) + 3, message.indexOf(END_STRIKE));
-    			String partThree = message.substring(message.indexOf(END_STRIKE) + 2, message.length());
-    			String formattedMes = partOne + "(STRIKE)" + partTwo + "(STRIKE)" + partThree;
-    			client.send(client.getClientName(), formattedMes);
-    			wasFormat = true;
+	    		if (newMes.indexOf(ITALIC) > -1) {
+	    			
+	    			String tempArr[] = newMes.split("%%");
+	    			newMes = "";
+	    			for(int i = 0; i < tempArr.length; i++) {
+	    				if (i % 2 == 0) {
+	    					newMes = newMes + tempArr[i]; 
+	    				}
+	    				else {
+	    					newMes = newMes + "<i>" + tempArr[i] + "</i>";
+	    				}
+	    			}
+	    		}
+	    		if (newMes.indexOf(BOLD) > -1) {
+	    			
+	    			String tempArr[] = newMes.split("@@");
+	    			newMes = "";
+	    			for(int i = 0; i < tempArr.length; i++) {
+	    				if (i % 2 == 0) {
+	    					newMes = newMes + tempArr[i]; 
+	    				}
+	    				else {
+	    					newMes = newMes + "<b>" + tempArr[i] + "</b>";
+	    				}
+	    			}
+	    		}
+	    		if (message.indexOf(UNDERLINE) > -1) {
+	    			
+	    			String tempArr[] = newMes.split("__");
+	    			newMes = "";
+	    			for(int i = 0; i < tempArr.length; i++) {
+	    				if (i % 2 == 0) {
+	    					newMes = newMes + tempArr[i]; 
+	    				}
+	    				else {
+	    					newMes = newMes + "<u>" + tempArr[i] + "</u>";
+	    				}
+	    			}
+	    		}
+	    		if (message.indexOf(STRIKE) > -1) {
+	    			
+	    			String tempArr[] = newMes.split("~~");
+	    			newMes = "";
+	    			for(int i = 0; i < tempArr.length; i++) {
+	    				if (i % 2 == 0) {
+	    					newMes = newMes + tempArr[i]; 
+	    				}
+	    				else {
+	    					newMes = newMes + "<strike>" + tempArr[i] + "</strike>";
+	    				}
+	    			}
+	    		}
+    			client.send(client.getClientName(), newMes);
     		}
     	}
     	catch (Exception e) {
