@@ -39,7 +39,7 @@ public class ClientUI extends JFrame implements Event {
     JPanel userPanel;
     List<User> users = new ArrayList<User>();
     private final static Logger log = Logger.getLogger(ClientUI.class.getName());
-    Dimension windowSize = new Dimension(400, 400);
+    Dimension windowSize = new Dimension(420, 400);
 
     public ClientUI(String title) {
 	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -213,6 +213,7 @@ public class ClientUI extends JFrame implements Event {
 
     void addMessage(String str) {
 	JEditorPane entry = new JEditorPane();
+	entry.setContentType("text/html");
 	entry.setEditable(false);
 	// entry.setLayout(null);
 	entry.setText(str);

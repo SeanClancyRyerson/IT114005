@@ -18,11 +18,16 @@ public class Room implements AutoCloseable {
     private final static String JOIN_ROOM = "joinroom";
     private final static String ROLL_DICE = "roll";
     private final static String FLIP_COIN = "flip";
+    private final static String MUTE = "mute";
+    private final static String UNMUTE = "unmute";
     
     private final static String ITALIC = "%%";
-    private final static String BOLD = "@@";
+    private final static String BOLD = "!!";
     private final static String UNDERLINE = "__";
     private final static String STRIKE = "~~";
+    
+    private final static String PRIVATE = "@";
+    
 
     public Room(String name) {
 	this.name = name;
@@ -134,26 +139,35 @@ public class Room implements AutoCloseable {
 				int roll = (int)(Math.random() * 6) + 1;
 				log.log(Level.INFO, client.getClientName() + "rolled a " + roll);
 				String rollMes = "has rolled a " + roll;
-				client.send(client.getClientName(), "/roll");
-				client.send("<b>" + client.getClientName() + "</b>", "<b style=\"color:blue;\">" + rollMes + "</b>");
+				sendMessageHelper(client, "/roll");
+				rollMes = "<b style=\"color:blue;\">" + rollMes + "</b>";
+				sendMessageHelper(client, rollMes);
 				wasCommand = true;
 				break;
 			case FLIP_COIN:
 				int flip = (int)(Math.random() * 2);
 				if (flip  == 0) {
 					log.log(Level.INFO, client.getClientName() + " landed on heads");
-					client.send(client.getClientName(), "/flip");
+					sendMessageHelper(client, "/flip");
 					String headMes = "<b style=\"color:green;\">" + "has landed on heads" + "</b>";
-					client.send("<b>" + client.getClientName() + "</b>", headMes);
+					sendMessageHelper(client, headMes);
 				}
 				else {
 					log.log(Level.INFO, client.getClientName() + " landed on tails");
-					client.send(client.getClientName(), "/flip");
+					sendMessageHelper(client, "/flip");
 					String tailMes = "<b style=\"color:red;\">" + "has landed on tails" + "</b>";
-					client.send("<b>" + client.getClientName() + "</b>", tailMes);
+					sendMessageHelper(client, tailMes);
 				}
 				wasCommand = true;
 				break;
+			case MUTE:
+			    //client.addMuted("hello");
+			    break;
+			case UNMUTE:
+			    roomName = comm2[1];
+			    joinRoom(roomName, client);
+			    wasCommand = true;
+			    break;
 			}
 	    }
 	}
@@ -185,7 +199,7 @@ public class Room implements AutoCloseable {
 	    		}
 	    		if (newMes.indexOf(BOLD) > -1) {
 	    			
-	    			String tempArr[] = newMes.split("@@");
+	    			String tempArr[] = newMes.split("!!");
 	    			newMes = "";
 	    			for(int i = 0; i < tempArr.length; i++) {
 	    				if (i % 2 == 0) {
@@ -222,7 +236,14 @@ public class Room implements AutoCloseable {
 	    				}
 	    			}
 	    		}
-    			client.send(client.getClientName(), newMes);
+    			
+    			if (message.substring(0, 1).equals("@")){
+    				sendMessagePrivate(client, newMes);
+    			}
+    			else {
+    				sendMessageHelper(client, newMes);
+    			}
+    			
     		}
     	}
     	catch (Exception e) {
@@ -230,18 +251,31 @@ public class Room implements AutoCloseable {
 		}
     	return wasFormat;
     }
+    
+    public boolean checkPrivate(String message, ServerThread client) {
+    	boolean wasPrivate = false;
+    	try {
+    		if(message.indexOf(PRIVATE) == 0) {
+    			wasPrivate = true;		
+    		}
+    	}
+    	catch (Exception e) {
+		    e.printStackTrace();
+		}
+    	return wasPrivate;
+    }
 
     // TODO changed from string to ServerThread
     protected void sendConnectionStatus(ServerThread client, boolean isConnect, String message) {
-	Iterator<ServerThread> iter = clients.iterator();
-	while (iter.hasNext()) {
-	    ServerThread c = iter.next();
-	    boolean messageSent = c.sendConnectionStatus(client.getClientName(), isConnect, message);
-	    if (!messageSent) {
-			iter.remove();
-			log.log(Level.INFO, "Removed client " + c.getId());
+		Iterator<ServerThread> iter = clients.iterator();
+		while (iter.hasNext()) {
+		    ServerThread c = iter.next();
+		    boolean messageSent = c.sendConnectionStatus(client.getClientName(), isConnect, message);
+		    if (!messageSent) {
+				iter.remove();
+				log.log(Level.INFO, "Removed client " + c.getId());
+			}
 		}
-	}
     }
 
     /***
@@ -262,6 +296,11 @@ public class Room implements AutoCloseable {
 		    // it was a special format, broadcast happened in the checkFormat method
 		    return;
 		}
+		if (checkPrivate(message, sender)) {
+		    // private message, message sent here
+			sendMessagePrivate(sender, message);
+		    return;
+		}
 		Iterator<ServerThread> iter = clients.iterator();
 		while (iter.hasNext()) {
 		    ServerThread client = iter.next();
@@ -270,6 +309,37 @@ public class Room implements AutoCloseable {
 				iter.remove();
 				log.log(Level.INFO, "Removed client " + client.getId());
 		    }
+		}
+    }
+    
+    //this method just sends the messages to all in current room without checking commands,... etc
+    protected void sendMessageHelper(ServerThread sender, String message) {
+    	Iterator<ServerThread> iter = clients.iterator();
+		while (iter.hasNext()) {
+		    ServerThread client = iter.next();
+		    boolean messageSent = client.send(sender.getClientName(), message);
+		    if (!messageSent) {
+				iter.remove();
+				log.log(Level.INFO, "Removed client " + client.getId());
+		    }
+		}
+    }
+    
+    protected void sendMessagePrivate(ServerThread sender, String message) {
+    	sender.send(sender.getClientName(), message);
+		
+		String arrTarget[] = message.split(" ");
+		String target = arrTarget[0].substring(1, arrTarget[0].length());
+		Iterator<ServerThread> iter = clients.iterator();
+		while (iter.hasNext()) {
+			ServerThread client = iter.next();
+			if (client.getClientName().equals(target)) {
+			    boolean messageSent = client.send(sender.getClientName(), message);
+			    if (!messageSent) {
+					iter.remove();
+					log.log(Level.INFO, "Removed client " + client.getId());
+			    }
+			}
 		}
     }
     
