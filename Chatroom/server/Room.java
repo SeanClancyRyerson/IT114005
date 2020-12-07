@@ -161,11 +161,17 @@ public class Room implements AutoCloseable {
 				wasCommand = true;
 				break;
 			case MUTE:
-			    //client.addMuted("hello");
+				int mutedIndex = message.indexOf("@");
+				String mutedUser = message.substring(mutedIndex + 1, message.length());
+				client.addMuted(mutedUser);
+				log.log(Level.INFO, client.getClientName() + " has muted user: " + mutedUser);
+				wasCommand = true;
 			    break;
 			case UNMUTE:
-			    roomName = comm2[1];
-			    joinRoom(roomName, client);
+				int unmutedIndex = message.indexOf("@");
+				String unmutedUser = message.substring(unmutedIndex + 1, message.length());
+				client.removeMuted(unmutedUser);
+				log.log(Level.INFO, client.getClientName() + " has UNmuted user: " + unmutedUser);
 			    wasCommand = true;
 			    break;
 			}
@@ -304,10 +310,12 @@ public class Room implements AutoCloseable {
 		Iterator<ServerThread> iter = clients.iterator();
 		while (iter.hasNext()) {
 		    ServerThread client = iter.next();
-		    boolean messageSent = client.send(sender.getClientName(), message);
-		    if (!messageSent) {
-				iter.remove();
-				log.log(Level.INFO, "Removed client " + client.getId());
+		    if ( !(client.isMuted(sender.getClientName()) )) {
+			    boolean messageSent = client.send(sender.getClientName(), message);
+			    if (!messageSent) {
+					iter.remove();
+					log.log(Level.INFO, "Removed client " + client.getId());
+			    }
 		    }
 		}
     }
@@ -317,10 +325,12 @@ public class Room implements AutoCloseable {
     	Iterator<ServerThread> iter = clients.iterator();
 		while (iter.hasNext()) {
 		    ServerThread client = iter.next();
-		    boolean messageSent = client.send(sender.getClientName(), message);
-		    if (!messageSent) {
-				iter.remove();
-				log.log(Level.INFO, "Removed client " + client.getId());
+		    if (!(client.isMuted(sender.getClientName()))) {
+			    boolean messageSent = client.send(sender.getClientName(), message);
+			    if (!messageSent) {
+					iter.remove();
+					log.log(Level.INFO, "Removed client " + client.getId());
+			    }
 		    }
 		}
     }
@@ -333,12 +343,14 @@ public class Room implements AutoCloseable {
 		Iterator<ServerThread> iter = clients.iterator();
 		while (iter.hasNext()) {
 			ServerThread client = iter.next();
-			if (client.getClientName().equals(target)) {
-			    boolean messageSent = client.send(sender.getClientName(), message);
-			    if (!messageSent) {
-					iter.remove();
-					log.log(Level.INFO, "Removed client " + client.getId());
-			    }
+			if (!(client.isMuted(sender.getClientName()))) {
+				if (client.getClientName().equals(target)) {
+				    boolean messageSent = client.send(sender.getClientName(), message);
+				    if (!messageSent) {
+						iter.remove();
+						log.log(Level.INFO, "Removed client " + client.getId());
+				    }
+				}
 			}
 		}
     }

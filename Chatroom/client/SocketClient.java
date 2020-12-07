@@ -7,7 +7,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.ArrayList;
 
 import server.Payload;
 import server.PayloadType;
@@ -21,7 +20,6 @@ public class SocketClient {
     private static ObjectOutputStream out;
     private final static Logger log = Logger.getLogger(SocketClient.class.getName());
     private static Event event;
-    private static ArrayList<String> mutedList = new ArrayList<String>();
 
     private static Payload buildMessage(String message) {
 	Payload payload = new Payload();
@@ -31,41 +29,7 @@ public class SocketClient {
 	return payload;
     }
     
-    public static boolean checkMuted(String muted) {
-    	boolean isMuted = false;
-    	
-    	try {
-    		for(int i = 0; i < mutedList.size(); i++) {
-    			if(mutedList.get(i).equals(muted)) {
-    				isMuted = true;
-    				return isMuted;
-    			}
-    		}
-    	}
-    	catch (Exception e) {
-		    e.printStackTrace();
-		}
-    	
-    	return isMuted;
-    }
     
-    public static void addMuted(String muted) {
-    	mutedList.add(muted);
-    }
-    
-    public static void removeMuted(String unmuted) {
-    	try {
-    		for(int i = 0; i < mutedList.size(); i++) {
-    			if(mutedList.get(i).equals(unmuted)) {
-    				mutedList.remove(i);
-    				break;
-    			}
-    		}
-    	}
-    	catch (Exception e) {
-		    e.printStackTrace();
-		}
-    }
 
     private static Payload buildConnectionStatus(String name, boolean isConnect) {
 	Payload payload = new Payload();
