@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.lang.Math;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 
 public class Room implements AutoCloseable {
     private static SocketServer server;// used to refer to accessible server functions
@@ -20,6 +23,7 @@ public class Room implements AutoCloseable {
     private final static String FLIP_COIN = "flip";
     private final static String MUTE = "mute";
     private final static String UNMUTE = "unmute";
+    private final static String DOWNLOAD = "download";
     
     private final static String ITALIC = "%%";
     private final static String BOLD = "!!";
@@ -163,17 +167,33 @@ public class Room implements AutoCloseable {
 			case MUTE:
 				int mutedIndex = message.indexOf("@");
 				String mutedUser = message.substring(mutedIndex + 1, message.length());
-				client.addMuted(mutedUser);
-				log.log(Level.INFO, client.getClientName() + " has muted user: " + mutedUser);
+				if ( !(client.isMuted(mutedUser))) {
+					client.addMuted(mutedUser);
+					log.log(Level.INFO, client.getClientName() + " has muted user: " + mutedUser);
+					sendMutedMessage(client, mutedUser);
+					//client.onIsMuted(mutedUser, true);
+				}
+				else {
+					client.send("SERVER", "User already muted");
+				}
 				wasCommand = true;
 			    break;
 			case UNMUTE:
 				int unmutedIndex = message.indexOf("@");
 				String unmutedUser = message.substring(unmutedIndex + 1, message.length());
-				client.removeMuted(unmutedUser);
-				log.log(Level.INFO, client.getClientName() + " has UNmuted user: " + unmutedUser);
+				if (client.isMuted(unmutedUser)) {
+					client.removeMuted(unmutedUser);
+					log.log(Level.INFO, client.getClientName() + " has unmuted user: " + unmutedUser);
+					sendUnmutedMessage(client, unmutedUser);
+				}
+				else {
+					client.send("SERVER", "User was not muted. Nothing changed.");
+				}
 			    wasCommand = true;
 			    break;
+			case DOWNLOAD:
+				client.send("SERVER", "Your txt file is within bin folder of the project");
+				break;
 			}
 	    }
 	}
@@ -283,6 +303,29 @@ public class Room implements AutoCloseable {
 			}
 		}
     }
+    
+    void addText(String clientName, String message) {
+        try {
+            File chatLog = new File("chatLog.txt");
+            if (chatLog.createNewFile()) {
+            	FileWriter fw = new FileWriter("chatLog.txt", true);
+                BufferedWriter bw = new BufferedWriter(fw);
+                bw.write(clientName + ": " + message);
+                bw.newLine();
+                bw.close();
+            } 
+            else {
+            	FileWriter fw = new FileWriter("chatLog.txt", true);
+                BufferedWriter bw = new BufferedWriter(fw);
+                bw.write(clientName + ": " + message);
+                bw.newLine();
+                bw.close();
+            }
+          } 
+        catch (Exception e) {
+        	e.printStackTrace();
+        }
+    }
 
     /***
      * Takes a sender and a message and broadcasts the message to all clients in
@@ -308,6 +351,7 @@ public class Room implements AutoCloseable {
 		    return;
 		}
 		Iterator<ServerThread> iter = clients.iterator();
+		addText(sender.getClientName(), message);
 		while (iter.hasNext()) {
 		    ServerThread client = iter.next();
 		    if ( !(client.isMuted(sender.getClientName()) )) {
@@ -323,6 +367,7 @@ public class Room implements AutoCloseable {
     //this method just sends the messages to all in current room without checking commands,... etc
     protected void sendMessageHelper(ServerThread sender, String message) {
     	Iterator<ServerThread> iter = clients.iterator();
+    	addText(sender.getClientName(), message);
 		while (iter.hasNext()) {
 		    ServerThread client = iter.next();
 		    if (!(client.isMuted(sender.getClientName()))) {
@@ -351,6 +396,40 @@ public class Room implements AutoCloseable {
 						log.log(Level.INFO, "Removed client " + client.getId());
 				    }
 				}
+			}
+		}
+    }
+    
+    protected void sendMutedMessage(ServerThread sender, String mutedUser) {
+    	sender.send("SERVER", mutedUser + " has been muted");
+		
+		Iterator<ServerThread> iter = clients.iterator();
+		while (iter.hasNext()) {
+			ServerThread client = iter.next();
+			if (client.getClientName().equals(mutedUser)) {
+			    boolean messageSent = client.send("SERVER", sender.getClientName() + " has muted you");
+			    client.setName("<color=red>" + mutedUser + "</color>");
+			    if (!messageSent) {
+					iter.remove();
+					log.log(Level.INFO, "Removed client " + client.getId());
+			    }
+			}
+		}
+    }
+    
+    protected void sendUnmutedMessage(ServerThread sender, String unmutedUser) {
+    	sender.send("SERVER", unmutedUser + " has been unmuted");
+		
+		Iterator<ServerThread> iter = clients.iterator();
+		while (iter.hasNext()) {
+			ServerThread client = iter.next();
+			if (client.getClientName().equals(unmutedUser)) {
+			    boolean messageSent = client.send("SERVER", sender.getClientName() + " has unmuted you");
+			    client.setName(unmutedUser);
+			    if (!messageSent) {
+					iter.remove();
+					log.log(Level.INFO, "Removed client " + client.getId());
+			    }
 			}
 		}
     }

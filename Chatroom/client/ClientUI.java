@@ -28,6 +28,8 @@ import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 
+import server.ServerThread;
+
 public class ClientUI extends JFrame implements Event {
     /**
      * 
@@ -42,18 +44,34 @@ public class ClientUI extends JFrame implements Event {
     Dimension windowSize = new Dimension(420, 400);
 
     public ClientUI(String title) {
-	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	setPreferredSize(windowSize);
-	setLocationRelativeTo(null);
-	self = this;
-	setTitle(title);
-	card = new CardLayout();
-	setLayout(card);
-	createConnectionScreen();
-	createUserInputScreen();
-	createPanelRoom();
-	createPanelUserList();
-	showUI();
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setPreferredSize(windowSize);
+		setLocationRelativeTo(null);
+		self = this;
+		setTitle(title);
+		card = new CardLayout();
+		setLayout(card);
+		createConnectionScreen();
+		createUserInputScreen();
+		createPanelRoom();
+		createPanelUserList();
+		showUI();
+    }
+    
+    public void onIsMuted(String clientName, boolean isMuted) {
+    	List<ServerThread> clients = new ArrayList<ServerThread>();
+    	Iterator<ServerThread> iter = clients.iterator();
+    	while (iter.hasNext()) {
+    	    ServerThread c = iter.next();
+    	    if (c.getClientName().equalsIgnoreCase(clientName)) {
+	    	    if (isMuted) {
+	    	    	c.setName("<color=red>" + clientName + "</color>");
+	    	    }
+	    	    else {
+	    	    	c.setName(clientName);
+	    	    }
+    	    }
+    	}
     }
 
     void createConnectionScreen() {
@@ -228,6 +246,8 @@ public class ClientUI extends JFrame implements Event {
 	System.out.println(entry.getSize());
 	JScrollBar sb = ((JScrollPane) textArea.getParent().getParent()).getVerticalScrollBar();
 	sb.setValue(sb.getMaximum());
+	
+	
     }
 
     void next() {
